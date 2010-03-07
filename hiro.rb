@@ -47,6 +47,23 @@ on :channel, /^authorized_users/ do
 
 end
 
+on :channel, /^password (\S+) (\S+)/ do
+  if authorized_users.include? nick and authorized_users[nick]["host"] == "#{nick}@#{host}"
+    if users[authorized_users[nick]["user"]]["pass"] == match[0]
+      users[authorized_users[nick]["user"]]["pass"] = match[1]
+      File.open('users.yaml', 'w') do |out|
+        YAML.dump(users, out)
+      end
+      msg channel, "#{nick}: Your password has been updated."
+    else
+      msg channel, "#{nick}: Bad password. Your password has not been changed."
+    end
+  else
+    msg channel, "#{nick}: You must identify before using this command."    
+  end
+end
+
+
 on :channel, /^unidentify/ do
   if authorized_users.include? nick and authorized_users[nick]["host"] == "#{nick}@#{host}"
     authorized_users.delete(nick)
