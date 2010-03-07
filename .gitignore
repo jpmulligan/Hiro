@@ -1,0 +1,9 @@
+.DS_Store
+*.kpf
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.yml
+*.yaml
+
