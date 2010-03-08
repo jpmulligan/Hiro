@@ -23,32 +23,31 @@ on :connect do
   join config["channel"]
 end
 
-on :channel, /^whoami/ do
-  auth_status = authorized_users.include? nick
+on :channel, /^:whoami/ do
+  auth_status = authorized_users.include? "#{nick}@#{host}"
   msg channel, "#{nick}: nick=#{nick} host=#{host} auth=#{auth_status}"
 end
 
 
-on :channel, /^restricted/ do
-  if authorized_users.include? nick and authorized_users[nick]["host"] == "#{nick}@#{host}"
+on :channel, /^:restricted/ do
+  if authorized_users.include? "#{nick}@#{host}"
       msg channel, "#{nick}: You are in my authorized users list and your hostmask matches."
   else
     msg channel, "#{nick}: You are not in my list of authorized users."
   end
 end
 
-on :channel, /^authorized_users/ do
+on :channel, /^:authorized_users/ do
   authorized_users.each_pair { |n, h|
     msg channel, "#{n}"
     h.each_pair { |k,v|
       msg channel, "  #{k} = #{v}"
       }
     }
-
 end
 
-on :channel, /^password (\S+) (\S+)/ do
-  if authorized_users.include? nick and authorized_users[nick]["host"] == "#{nick}@#{host}"
+on :channel, /^:password (\S+) (\S+)/ do
+  if authorized_users.include? "#{nick}@#{host}"
     if users[authorized_users[nick]["user"]]["pass"] == match[0]
       users[authorized_users[nick]["user"]]["pass"] = match[1]
       File.open('users.yaml', 'w') do |out|
@@ -63,9 +62,24 @@ on :channel, /^password (\S+) (\S+)/ do
   end
 end
 
+on :channel, /^:register (\S+) (\S+)/ do
+  username = match[0]
+  password = match[1]
+  
+  if users.include? username
+    msg channel, "#{nick}: That username is already registered."
+  else
+    users.store(username,{"groups" => ["users"],"pass" => password})
+    File.open('users.yaml', 'w') do |out|
+      YAML.dump(users, out)
+    end
+    msg channel, "#{nick}: You are registered. Identify yourself."
+  end
+  
+end
 
-on :channel, /^unidentify/ do
-  if authorized_users.include? nick and authorized_users[nick]["host"] == "#{nick}@#{host}"
+on :channel, /^:unidentify/ do
+  if authorized_users.include? "#{nick}@#{host}"
     authorized_users.delete(nick)
     msg channel, "#{nick}: You have been deauthorized."
   else
@@ -73,13 +87,12 @@ on :channel, /^unidentify/ do
   end
 end
 
-on :channel, /^identify (\S+) (\S+)/ do
+on :channel, /^:identify (\S+) (\S+)/ do
   username = match[0]
   password = match[1]
-  
+    
   if users.include? username and users[username]["pass"] == password
-    groups = 
-    authorized_users.store(nick, {"user" => username, "host" => "#{nick}@#{host}", "groups" => users[username]["groups"]})
+    authorized_users.store("#{nick}@#{host}", {"user" => username, "host" => host, "groups" => users[username]["groups"]})
     msg channel, "#{nick}: You have been added to my list of authorized users."
   else
     msg channel, "#{nick}: Bad username or password."
