@@ -69,7 +69,7 @@ on :channel, /^:register (\S+) (\S+)/ do
   if users.include? username
     msg channel, "#{nick}: That username is already registered."
   else
-    users.store(username,{"groups" => ["users"],"pass" => password})
+    users.store(username,{"groups" => ["user"],"pass" => password})
     File.open('users.yaml', 'w') do |out|
       YAML.dump(users, out)
     end
